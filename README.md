@@ -1,6 +1,20 @@
-# NCAE-Private
-
+# NCAE-Private  
+  
 #Working on  
--Apache Hardening
+-General Hardening  
+-Apache Hardening  
+-Persistance check  
+-Mikrotik  
+-DNS setup  
+-Espanso files  
 
-#Finished
+#Finished  
+None lol  
+  
+#Note for espanso files  
+Make sure to put these lines in your config  
+```
+#$HOME/.config/espanso/match/base.yml  
+imports:  
+  - "home/illu/.config/espanso/match/ncae.yml" #CHANGEME  
+```
