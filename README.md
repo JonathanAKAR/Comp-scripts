@@ -16,5 +16,5 @@ Make sure to put these lines in your config
 ```
 #$HOME/.config/espanso/match/base.yml  
 imports:  
-  - "home/illu/.config/espanso/match/ncae.yml" #CHANGEME  
+  - "/usr/share/espanso/ncae.yaml"  
 ```

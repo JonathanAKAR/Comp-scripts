@@ -1,10 +1,13 @@
 #!/bin/bash
 
-echo "Run this as root!"
 
-#updates
-apt update -y
-apt upgrade -y
-apt full-upgrade -y
+if [ $UID -ne 0 ]; then
+	echo "Script must be run as root"
+	exit 1
+fi
 
-
+#basic stuff - Comment out if no network access yet
+sudo apt update -y
+sudo apt upgrade -y
+sudo apt full-upgrade -y
+sudo apt install ufw -y #just in case
