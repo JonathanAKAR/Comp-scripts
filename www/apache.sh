@@ -46,22 +46,28 @@ if $is_online; then
 	rm -rf /usr/share/modsecurity-crs
 	cp -R coreruleset /usr/share/modsecurity-crs
 	mv /usr/share/modsecurity-crs/crs-setup.conf.example /usr/share/modsecurity-crs/crs-setup.conf
-	
-	cat << EOF > /etc/apache2/mods-enabled/security2.conf
-<IfModule security2_module>
-    SecDataDir /var/cache/modsecurity
-    IncludeOptional /etc/modsecurity/*.conf
-    IncludeOptional "/usr/share/modsecurity-crs/*.conf"
-    IncludeOptional "/usr/share/modsecurity-crs/rules/*.conf"
-</IfModule>
-EOF
 
+	#config file stuff
+	cp config_files/security2.conf /etc/apache2/mods-enabled/security2.conf
 	echo SecRuleEngine On >> /etc/apache2/sites-available/000-default.conf
 fi
 
+#mod evasive
+if $is_online; then
+	#install
+	apt install libapache2-mod-evasive
 
+	#log related stuff
+	mkdir /var/log/mod_evasive 
+	chown -R www-data:www-data /var/log/mod_evasive
+
+	#config related
+	cp config_files/evasive.conf /etc/apache2/mods-enabled/evasive.conf
+
+fi
 
 #try restarting machines
 systemctl restart apache2
-echo "test if modsecurity works, Curl http://127.0.0.1?q=<script>alert(1);</script> results in 403"
+echo "test if modsecurity works, curl http://127.0.0.1?q=<script>alert(1);</script> results in 403"
+echo "test if modevasive works, perl /usr/share/doc/libapache2-mod-evasive/examples/test.pl"
 echo "try restart your machine now"
