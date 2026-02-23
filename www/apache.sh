@@ -57,12 +57,11 @@ if $is_online; then
 EOF
 
 	echo SecRuleEngine On >> /etc/apache2/sites-available/000-default.conf
-	echo SecRule ARGS:testparam "@contains test" "id:1234,deny,status:403,msg:'Test Successful'" >> /etc/modsecurity/modsecurity.conf
 fi
 
 
 
 #try restarting machines
 systemctl restart apache2
-echo "added test rule at /etc/apache2/sites-available/000-default.conf, remove if curl http://127.0.0.1?testparam=test results in 403"
+echo "test if modsecurity works, Curl http://127.0.0.1?q=<script>alert(1);</script> results in 403"
 echo "try restart your machine now"
