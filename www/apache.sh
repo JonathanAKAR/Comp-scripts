@@ -14,6 +14,11 @@ else
     is_online=false
 fi
 
+#sanity
+apt install apache2 -y && apt upgrade apache2 -y
+chown -R root:www-data /var/www/html
+chmod -R 755 /var/www/html
+
 
 #ufw
 echo "[+] Configuring firewall"
@@ -49,18 +54,15 @@ if $is_online; then
     IncludeOptional "/usr/share/modsecurity-crs/*.conf"
     IncludeOptional "/usr/share/modsecurity-crs/rules/*.conf"
 </IfModule>
-	EOF
+EOF
 
 	echo SecRuleEngine On >> /etc/apache2/sites-available/000-default.conf
-	echo SecRule ARGS:testparam "@contains test" "id:1234,deny,status:403,msg:'Test Successful'" >> /etc/apache2/sites-available/000-default.conf
-
-
+	echo SecRule ARGS:testparam "@contains test" "id:1234,deny,status:403,msg:'Test Successful'" >> /etc/modsecurity/modsecurity.conf
 fi
 
 
 
-
-
 #try restarting machines
+systemctl restart apache2
 echo "added test rule at /etc/apache2/sites-available/000-default.conf, remove if curl http://127.0.0.1?testparam=test results in 403"
 echo "try restart your machine now"

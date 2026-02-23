@@ -1,19 +1,6 @@
 matches:
-  - trigger: ":setup_netplan"
-    replace: "{{text}}"
-    vars:
-      - name: text
-        type: shell
-        params:
-          cmd: "bash -c 'cat /usr/share/espanso/config_files/netplan.conf'"
-
-  - trigger: ":setup_networking"
-    replace: "{{text}}"
-    vars:
-      - name: text
-        type: shell
-        params:
-          cmd: "bash -c 'cat /usr/share/espanso/config_files/networking.conf'"
+  - trigger: ":git_ncae"
+    replace: "git clone https;//github.com/JonathanAKAR/Comp-scripts"
 
   - trigger: ":copy"
     replace: "rm /usr/share/espanso/config_files/clipboard.txt; nano/usr/share/espanso/config_files/clipboard.txt"

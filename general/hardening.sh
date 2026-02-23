@@ -10,4 +10,5 @@ fi
 sudo apt update -y
 sudo apt upgrade -y
 sudo apt full-upgrade -y
-sudo apt install ufw -y #just in case
+sudo apt install ufw -y #add ufw
+sudo apt install git -y #add git
