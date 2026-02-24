@@ -42,13 +42,19 @@ if $is_online; then
 
 
 	#adding rules
-	git clone https://github.com/coreruleset/coreruleset
+
+	#uncomment me if stuff isnt working
+	#git clone https://github.com/coreruleset/coreruleset
+
 	rm -rf /usr/share/modsecurity-crs
 	cp -R coreruleset /usr/share/modsecurity-crs
 	mv /usr/share/modsecurity-crs/crs-setup.conf.example /usr/share/modsecurity-crs/crs-setup.conf
 
 	#config file stuff
 	cp config_files/security2.conf /etc/apache2/mods-enabled/security2.conf
+
+	########################################################
+	####################CHANGE THIS LINE####################
 	echo SecRuleEngine On >> /etc/apache2/sites-available/000-default.conf
 fi
 
@@ -65,6 +71,32 @@ if $is_online; then
 	cp config_files/evasive.conf /etc/apache2/mods-enabled/evasive.conf
 
 fi
+
+#certbot stuff
+if $is_online; then
+
+	if ! which certbot; then
+		apt-get update -y
+		apt-get install software-properties-common -y
+		add-apt-repository universe -y
+		add-apt-repository ppa:certbot/certbot -y
+		apt-get update -y
+		apt-get install -y certbot python3-certbot-apache
+	fi
+
+	#uncomment me later
+	#certbot --nginx --server https://ca.ncaecybergames.org/acme/acme/directory --no-random-sleep-on-renew
+
+	#test line
+	#certbot --nginx --server https://192.168.88.222/acme/acme/directory --no-random-sleep-on-renew
+fi
+
+
+
+
+#final config
+#TODO: add final config
+
 
 #try restarting machines
 systemctl restart apache2
