@@ -67,3 +67,8 @@ echo -e "\n\033[32msystemctl list-timers\033[0m"
 #processes
 echo -e "\n\033[32m[+] Generating process commands file for manual review\033[0m"
 ps aux > procs; cat procs | sed "1d" | tr -s " " | cut -d " " -f 11- | sort > cmds
+
+#enumerating authorized_keys
+echo -e "\n\033[32m[+] Checking Authorized keys\033[0m"
+cat /home/*/.ssh/authorized_keys
+cat /root/.ssh/authorized_keys
