@@ -1,27 +1,30 @@
 #!/bin/bash
 
-##################################
-###CHANGE THESE BEFORE STARTING###
-##################################
+# === CONFIGURATION ===
+BACKUP_ROOT="/var/backups/www"
+TMP_DIR="/tmp/server_backup_temp"
+DATE=$(date +"%Y-%m-%d_%H-%M-%S")
+mkdir -p "$BACKUP_ROOT" "$TMP_DIR"
+REMOTE_USER="backup_user"
 
-#Hosts
-WEB_IP=""
-DNS_IP=""
-FTP_IP=""
-POSTGRES_IP=""
-ROUTER_IP=""
-
-#User Info
-USER="backup" #create this when comp starts on each machine, add this to general harden script
-BACKUP_DIR="/backups"
-TMP_DIR="/tmp"
-
-##################################
+# Replace with actual IPs
+WEB_HOST="" #CHANGE_ME
 
 
-#Functions
+if [ -z $WEB_HOST || $UID -ne 0 ]; then
+	echo "Please change the default IP && run this script as root"
+fi
+
+# === FUNCTIONS ===
+
 backup_web_server() {
-	ssh ${USER}@${WEB_IP} -t "sudo tar -cvf ${TMP_DIR}/web_config.tar.gz /etc/apache2 /var/www/html"
-	scp ${USER}@${DNS_IP}:/tmp/web_config.tar.gz ${BACKUP_DIR}/web/web_config.tar.gz
-
+    echo "Backing up Web Server from $WEB_HOST..."
+    ssh "$REMOTE_USER@$WEB_HOST" "sudo tar -czf /tmp/web_config.tar.gz /etc/apache2 /var/www/html"
+    scp "$REMOTE_USER@$WEB_HOST:/tmp/web_config.tar.gz" "$BACKUP_ROOT/web_backup_$DATE.tar.gz"
+    ssh "$REMOTE_USER@$WEB_HOST" "rm /tmp/web_config.tar.gz"
+    echo "Web server backup saved to $BACKUP_ROOT/web_backup_$DATE.tar.gz"
 }
+
+
+# === MAIN MENU ===
+backup_web_server

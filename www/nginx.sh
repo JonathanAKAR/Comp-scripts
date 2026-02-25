@@ -25,6 +25,7 @@ ufw default deny incoming
 ufw default allow outgoing
 ufw allow from 0.0.0.0/0 to any port 443 proto tcp 
 ufw allow from 0.0.0.0/0 to any port 80 proto tcp 
+ufw allow from 0.0.0.0/0 to any port 22 proto tcp
 sed -i '/IPV6=yes/s/.*/IPV6=no/' filename.txt
 
 
