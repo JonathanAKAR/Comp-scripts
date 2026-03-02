@@ -21,11 +21,15 @@ else
     is_online=false
 fi
 
+#backup initial
+tar -cvf initial_app.tar $WEBROOT /etc/apache2
+
 #sanity
 apt install apache2 -y && apt upgrade apache2 -y
 chown -R root:www-data /var/www/html
 chmod -R 755 /var/www/html
 
+#backup area
 
 #ufw
 echo "[+] Configuring firewall"
@@ -54,6 +58,7 @@ if $is_online; then
 	#uncomment me if stuff isnt working
 	#git clone https://github.com/coreruleset/coreruleset
 
+	git clone https://github.com/coreruleset/coreruleset
 	rm -rf /usr/share/modsecurity-crs
 	cp -R coreruleset /usr/share/modsecurity-crs
 	mv /usr/share/modsecurity-crs/crs-setup.conf.example /usr/share/modsecurity-crs/crs-setup.conf
@@ -88,7 +93,8 @@ if $is_online; then
 	#certbot --apache --server https://192.168.88.222/acme/acme/directory --no-random-sleep-on-renew
 fi
 
-
+#backup of final
+tar -cvf initial_app.tar $WEBROOT /etc/apache2
 
 #try restarting machines
 systemctl restart apache2
