@@ -66,23 +66,11 @@ if $is_online; then
 	echo SecRuleEngine On >> /etc/apache2/sites-available/000-default.conf
 fi
 
-#mod evasive
-if $is_online; then
-	#install
-	apt install libapache2-mod-evasive
-
-	#log related stuff
-	mkdir /var/log/mod_evasive 
-	chown -R www-data:www-data /var/log/mod_evasive
-
-	#config related
-	cp config_files/evasive.conf /etc/apache2/mods-enabled/evasive.conf
-
-fi
-
 #paste in config
 cp config_files/apache-000-default.conf /etc/apache2/sites-available/000-default.conf
 sed -i "s|^[[:space:]]*ServerName REPLACE_ME_WITH_DOMAIN|    ServerName ${WEBSITE_DOMAIN}|" /etc/apache2/sites-available/000-default.conf
+a2enmod proxy
+a2enmod proxy_http
 
 #certbot stuff
 if $is_online; then
