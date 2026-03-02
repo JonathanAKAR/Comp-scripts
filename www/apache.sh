@@ -78,12 +78,9 @@ a2enmod proxy_http
 if $is_online; then
 
 	if ! which certbot; then
-		apt-get update -y
-		apt-get install software-properties-common -y
-		add-apt-repository universe -y
-		add-apt-repository ppa:certbot/certbot -y
-		apt-get update -y
-		apt-get install -y certbot python3-certbot-apache
+		apt install snapd -y
+		snap install core; sudo snap refresh core
+		snap install --classic certbot
 	fi
 
 	#uncomment me later
@@ -94,7 +91,7 @@ if $is_online; then
 fi
 
 #backup of final
-tar -cvf initial_app.tar $WEBROOT /etc/apache2
+tar -cvf final_app.tar $WEBROOT /etc/apache2
 
 #try restarting machines
 systemctl restart apache2
