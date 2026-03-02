@@ -18,3 +18,6 @@ sudo apt install ssh #add ssh
 #make sure we have no ssh key
 rm /root/.ssh/authorized_keys
 rm /home/*/.ssh/authorized_keys
+
+#changepass
+passwd
