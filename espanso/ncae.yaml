@@ -3,7 +3,7 @@ matches:
     replace: "git clone https;//github.com/JonathanAKAR/Comp-scripts"
 
   - trigger: ":copy"
-    replace: "rm /usr/share/espanso/config_files/clipboard.txt; nano/usr/share/espanso/config_files/clipboard.txt"
+    replace: "rm /usr/share/espanso/config_files/clipboard.txt; nano /usr/share/espanso/config_files/clipboard.txt"
 
   - trigger: ":paste"
     replace: "{{text}}"

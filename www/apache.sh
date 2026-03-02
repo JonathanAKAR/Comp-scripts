@@ -5,6 +5,13 @@ if [ $UID -ne 0 ]; then
 	exit 1
 fi
 
+read -p "Hit enter if you have already changed the appropriate config, if not exit: " TMP
+
+#THINGS I MIGHT NEED TO SPEC
+WEBROOT="/var/www/html"
+WEBSITE_DOMAIN="test.com"
+ACME_URL="https://ca.ncaecybergames.org/acme/acme/directory"
+
 echo "[+] Checking for internet access"
 if ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
     echo "Access confirmed"
@@ -73,6 +80,10 @@ if $is_online; then
 
 fi
 
+#paste in config
+cp config_files/apache-000-default.conf /etc/apache2/sites-available/000-default.conf
+sed -i "s|^[[:space:]]*ServerName REPLACE_ME_WITH_DOMAIN|    ServerName ${WEBSITE_DOMAIN}|" /etc/apache2/sites-available/000-default.conf
+
 #certbot stuff
 if $is_online; then
 
@@ -86,17 +97,12 @@ if $is_online; then
 	fi
 
 	#uncomment me later
-	#certbot --nginx --server https://ca.ncaecybergames.org/acme/acme/directory --no-random-sleep-on-renew
+	certbot --apache --server $ACME_URL --no-random-sleep-on-renew
 
 	#test line
-	#certbot --nginx --server https://192.168.88.222/acme/acme/directory --no-random-sleep-on-renew
+	#certbot --apache --server https://192.168.88.222/acme/acme/directory --no-random-sleep-on-renew
 fi
 
-
-
-
-#final config
-#TODO: add final config
 
 
 #try restarting machines
