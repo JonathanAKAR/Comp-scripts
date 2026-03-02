@@ -1,9 +1,0 @@
-matches:
-  - trigger: ":git_ncae"
-    replace: "git clone https;//github.com/JonathanAKAR/Comp-scripts"
-
-  - trigger: ":copy"
-    replace: "nano /usr/share/espanso/ncae.yaml"
-
-  - trigger: ":paste"
-    replace: "thing"
