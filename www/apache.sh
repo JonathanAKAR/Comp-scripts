@@ -61,9 +61,6 @@ if $is_online; then
 	#config file stuff
 	cp config_files/security2.conf /etc/apache2/mods-enabled/security2.conf
 
-	########################################################
-	####################CHANGE THIS LINE####################
-	echo SecRuleEngine On >> /etc/apache2/sites-available/000-default.conf
 fi
 
 #paste in config
