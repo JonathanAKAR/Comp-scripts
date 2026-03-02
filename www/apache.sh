@@ -11,7 +11,6 @@ read -p "Hit enter if you have already changed the appropriate config, if not ex
 WEBROOT="/var/www/html"
 WEBSITE_DOMAIN="test.com"
 ACME_URL="https://ca.ncaecybergames.org/acme/acme/directory"
-APP_DIR="/app"
 
 echo "[+] Checking for internet access"
 if ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
@@ -21,9 +20,6 @@ else
     echo "No internet access"
     is_online=false
 fi
-
-#create initial backups of webroot, web config and app_dir
-
 
 #sanity
 apt install apache2 -y && apt upgrade apache2 -y
@@ -65,6 +61,9 @@ if $is_online; then
 	#config file stuff
 	cp config_files/security2.conf /etc/apache2/mods-enabled/security2.conf
 
+	########################################################
+	####################CHANGE THIS LINE####################
+	echo SecRuleEngine On >> /etc/apache2/sites-available/000-default.conf
 fi
 
 #paste in config
