@@ -52,29 +52,57 @@ if $is_online; then
 
     apt install -y libnginx-mod-http-modsecurity git
 
-    # Enable ModSecurity
     mkdir -p /etc/nginx/modsec
-    cp /etc/modsecurity/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf
-    sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/nginx/modsec/modsecurity.conf
+    mkdir -p /var/log/nginx
 
-    # Install OWASP CRS
-    git clone https://github.com/coreruleset/coreruleset
-    rm -rf /etc/nginx/modsec/coreruleset
-    mv coreruleset /etc/nginx/modsec/
-    mv /etc/nginx/modsec/coreruleset/crs-setup.conf.example \
-       /etc/nginx/modsec/coreruleset/crs-setup.conf
+    # Create minimal working modsecurity.conf
+    cat <<EOF > /etc/nginx/modsec/modsecurity.conf
+SecRuleEngine On
 
-    # Create main modsec config loader
-    cat <<EOF > /etc/nginx/modsec/main.conf
-Include /etc/nginx/modsec/modsecurity.conf
-Include /etc/nginx/modsec/coreruleset/crs-setup.conf
-Include /etc/nginx/modsec/coreruleset/rules/*.conf
+SecRequestBodyAccess On
+SecRequestBodyLimit 13107200
+SecRequestBodyNoFilesLimit 131072
+SecRequestBodyInMemoryLimit 131072
+
+SecResponseBodyAccess Off
+SecUploadKeepFiles Off
+
+SecAuditEngine RelevantOnly
+SecAuditLogRelevantStatus "^(?:5|4(?!04))"
+SecAuditLogParts ABIJDEFHZ
+SecAuditLogType Serial
+SecAuditLog /var/log/nginx/modsec_audit.log
+
+SecDebugLog /var/log/nginx/modsec_debug.log
+SecDebugLogLevel 0
+
+SecTmpDir /tmp
+SecDataDir /tmp
 EOF
 
-    # Enable in nginx.conf if not already enabled
-    if ! grep -q "modsecurity on;" /etc/nginx/nginx.conf; then
-        sed -i '/http {/a \    modsecurity on;\n    modsecurity_rules_file /etc/nginx/modsec/main.conf;' /etc/nginx/nginx.conf
+    # Ensure CRS exists
+    if [ ! -d /etc/modsecurity/crs ]; then
+        echo "[!] OWASP CRS not found, installing"
+        git clone https://github.com/coreruleset/coreruleset /etc/modsecurity/crs
+        mv /etc/modsecurity/crs/crs-setup.conf.example \
+           /etc/modsecurity/crs/crs-setup.conf
     fi
+
+    # Create loader file
+    cat <<EOF > /etc/nginx/modsec/main.conf
+Include /etc/nginx/modsec/modsecurity.conf
+Include /etc/modsecurity/crs/crs-setup.conf
+Include /etc/modsecurity/crs/rules/*.conf
+EOF
+
+    # Ensure nginx site config enables modsecurity
+    if ! grep -q "modsecurity on;" /etc/nginx/sites-available/default; then
+        sed -i '/server_name/a \
+    modsecurity on;\n    modsecurity_rules_file /etc/nginx/modsec/main.conf;\n' \
+        /etc/nginx/sites-available/default
+    fi
+
+    echo "[+] ModSecurity configured"
 fi
 
 # Replace default site config
