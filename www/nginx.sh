@@ -1,170 +1,125 @@
 #!/bin/bash
-set -e
 
-#############################################
-# VARIABLES (CHANGE THESE)
-#############################################
-
-SERVER_DOMAIN="example.com"
-LETSENCRYPT_SERVER="https://acme-v02.api.letsencrypt.org/directory"
-
-#############################################
-# 1. BACKUP INITIAL CONFIG
-#############################################
-
-echo "[+] Creating initial backup..."
-
-mkdir -p /root/nginx_backups
-tar -czf /root/nginx_backups/initial.tar \
-    /etc/nginx 2>/dev/null || true
-
-#############################################
-# 2. INSTALL NGINX
-#############################################
-
-echo "[+] Installing Nginx..."
-
-apt update -y
-apt install -y nginx
-
-systemctl enable nginx
-
-# Fix permissions
-chown -R www-data:www-data /var/www
-chmod -R 755 /var/www
-
-#############################################
-# 3. CONFIGURE UFW
-#############################################
-
-echo "[+] Configuring UFW..."
-
-apt install -y ufw
-
-ufw default deny incoming
-ufw default allow outgoing
-
-ufw allow 22
-ufw allow 80
-ufw allow 443
-
-ufw --force enable
-
-#############################################
-# 4. DISABLE IPV6
-#############################################
-
-echo "[+] Disabling IPv6..."
-
-cat <<EOF > /etc/sysctl.d/99-disable-ipv6.conf
-net.ipv6.conf.all.disable_ipv6 = 1
-net.ipv6.conf.default.disable_ipv6 = 1
-net.ipv6.conf.lo.disable_ipv6 = 1
-EOF
-
-sysctl -p /etc/sysctl.d/99-disable-ipv6.conf
-
-# Disable IPv6 in nginx
-sed -i 's/listen \[::\]:80 default_server;/#listen [::]:80 default_server;/' /etc/nginx/sites-available/default 2>/dev/null || true
-
-#############################################
-# 5. INSTALL MODSECURITY + OWASP CRS
-#############################################
-
-echo "[+] Installing ModSecurity and OWASP CRS..."
-
-apt install -y libnginx-mod-security2
-
-mkdir -p /etc/nginx/modsec
-cp /etc/modsecurity/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf 2>/dev/null || true
-
-if [ ! -f /etc/nginx/modsec/modsecurity.conf ]; then
-    cp /usr/share/modsecurity-crs/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf 2>/dev/null || true
+if [ $UID -ne 0 ]; then
+    echo "Run this script as root"
+    exit 1
 fi
 
-sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/nginx/modsec/modsecurity.conf || true
+read -p "Hit enter if you have already changed the appropriate config, if not exit: " TMP
 
-# Enable OWASP CRS
-apt install -y modsecurity-crs
-cp -r /usr/share/modsecurity-crs /etc/nginx/modsec/crs
+WEBROOT="/var/www/html"
+WEBSITE_DOMAIN="test.com"
 
-cat <<EOF > /etc/nginx/modsec/main.conf
-Include /etc/nginx/modsec/modsecurity.conf
-Include /etc/nginx/modsec/crs/crs-setup.conf
-Include /etc/nginx/modsec/crs/rules/*.conf
-EOF
+echo "[+] Checking for internet access"
+if ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
+    echo "Access confirmed"
+    is_online=true
+else
+    echo "No internet access"
+    is_online=false
+fi
 
-# Enable in nginx.conf
-sed -i '/http {/a \
-    modsecurity on;\n\
-    modsecurity_rules_file /etc/nginx/modsec/main.conf;' \
-    /etc/nginx/nginx.conf
+########################################
+# Backup initial state
+########################################
+echo "[+] Creating initial backup"
+tar -cvf initial_app.tar $WEBROOT /etc/nginx
 
-#############################################
-# 6. CONFIGURE REVERSE PROXY
-#############################################
+########################################
+# Install Nginx
+########################################
+echo "[+] Installing nginx"
+apt update -y
+apt install nginx -y
+apt upgrade nginx -y
 
-echo "[+] Configuring Reverse Proxy..."
+chown -R root:www-data $WEBROOT
+chmod -R 755 $WEBROOT
 
-cat <<EOF > /etc/nginx/sites-available/reverse-proxy.conf
+########################################
+# Firewall configuration
+########################################
+echo "[+] Configuring firewall"
+ufw --force enable
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow 443/tcp
+ufw allow 80/tcp
+ufw allow 22/tcp
+sed -i '/IPV6=yes/s/.*/IPV6=no/' /etc/default/ufw
+
+########################################
+# ModSecurity for Nginx
+########################################
+if $is_online; then
+    echo "[+] Installing ModSecurity for nginx"
+
+    apt install -y libnginx-mod-security git
+
+    mkdir -p /etc/nginx/modsec
+    cp /etc/modsecurity/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf
+    sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/nginx/modsec/modsecurity.conf
+
+    # Download OWASP CRS
+    git clone https://github.com/coreruleset/coreruleset
+    rm -rf /usr/share/modsecurity-crs
+    cp -R coreruleset /usr/share/modsecurity-crs
+    mv /usr/share/modsecurity-crs/crs-setup.conf.example \
+       /usr/share/modsecurity-crs/crs-setup.conf
+
+    # Include CRS into modsecurity.conf
+    echo "Include /usr/share/modsecurity-crs/crs-setup.conf" >> /etc/nginx/modsec/modsecurity.conf
+    echo "Include /usr/share/modsecurity-crs/rules/*.conf" >> /etc/nginx/modsec/modsecurity.conf
+fi
+
+########################################
+# Nginx Site Config
+########################################
+echo "[+] Creating nginx site configuration"
+
+cat > /etc/nginx/sites-available/default <<EOF
 server {
     listen 80;
-    server_name ${SERVER_DOMAIN};
+    server_name ${WEBSITE_DOMAIN};
+
+    root ${WEBROOT};
+    index index.html index.htm index.php;
+
+    # Enable ModSecurity
+    modsecurity on;
+    modsecurity_rules_file /etc/nginx/modsec/modsecurity.conf;
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        try_files \$uri \$uri/ =404;
+    }
+
+    # Reverse proxy example (edit if needed)
+    location /proxy/ {
+        proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     }
 }
-
-server {
-    listen 443 ssl;
-    server_name ${SERVER_DOMAIN};
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-    }
-}
 EOF
 
-ln -sf /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
+########################################
+# Disable IPv6 in nginx
+########################################
+sed -i 's/listen \[::\]:80 default_server;/#listen [::]:80 default_server;/' /etc/nginx/sites-available/default
 
-#############################################
-# 7. INSTALL CERTBOT
-#############################################
-
-echo "[+] Installing Certbot..."
-
-apt install -y certbot python3-certbot-nginx
-
-certbot --nginx -d ${SERVER_DOMAIN} --server ${LETSENCRYPT_SERVER} --non-interactive --agree-tos -m admin@${SERVER_DOMAIN}
-
-#############################################
-# 8. FINAL BACKUP
-#############################################
-
-echo "[+] Creating final backup..."
-
-tar -czf /root/nginx_backups/current_webapp.tar \
-    /etc/nginx \
-    /var/www
-
-#############################################
-# 9. RESTART SERVICES
-#############################################
-
-echo "[+] Restarting services..."
-
-systemctl restart nginx
+########################################
+# Test & Restart
+########################################
+nginx -t && systemctl restart nginx
 systemctl restart ufw
 
-echo "====================================="
-echo "Deployment Complete."
-echo "Initial backup: /root/nginx_backups/initial.tar"
-echo "Final backup: /root/nginx_backups/current_webapp.tar"
-echo "====================================="
+########################################
+# Final Backup
+########################################
+echo "[+] Creating final backup"
+tar -cvf final_app.tar $WEBROOT /etc/nginx
 
-echo "test curl http://127.0.0.1?q=<script>alert(1);</script>"
+echo "Test ModSecurity:"
+echo 'curl "http://127.0.0.1/?q=<script>alert(1);</script>"'
+echo "Should return 403 if working."
