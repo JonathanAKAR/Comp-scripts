@@ -54,7 +54,7 @@ sed -i '/IPV6=yes/s/.*/IPV6=no/' /etc/default/ufw
 if $is_online; then
     echo "[+] Installing ModSecurity for nginx"
 
-    apt install -y libnginx-mod-security git
+    apt install -y libnginx-mod-http-modsecurity git
 
     mkdir -p /etc/nginx/modsec
     cp /etc/modsecurity/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf
