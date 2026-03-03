@@ -54,22 +54,62 @@ sed -i '/IPV6=yes/s/.*/IPV6=no/' /etc/default/ufw
 if $is_online; then
     echo "[+] Installing ModSecurity for nginx"
 
-    apt install -y libnginx-mod-http-modsecurity git
+    apt update
+    apt install -y libmodsecurity3 libnginx-mod-http-modsecurity git
 
+    # Create modsec directory
     mkdir -p /etc/nginx/modsec
-    cp /etc/modsecurity/modsecurity.conf-recommended /etc/nginx/modsec/modsecurity.conf
-    sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/nginx/modsec/modsecurity.conf
 
-    # Download OWASP CRS
-    git clone https://github.com/coreruleset/coreruleset
-    rm -rf /usr/share/modsecurity-crs
-    cp -R coreruleset /usr/share/modsecurity-crs
-    mv /usr/share/modsecurity-crs/crs-setup.conf.example \
-       /usr/share/modsecurity-crs/crs-setup.conf
+    # Copy your custom modsecurity config
+    cp config_files/modsecurity.conf-recommended \
+       /etc/nginx/modsec/modsecurity.conf
 
-    # Include CRS into modsecurity.conf
-    echo "Include /usr/share/modsecurity-crs/crs-setup.conf" >> /etc/nginx/modsec/modsecurity.conf
-    echo "Include /usr/share/modsecurity-crs/rules/*.conf" >> /etc/nginx/modsec/modsecurity.conf
+    # Ensure blocking mode
+    sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' \
+       /etc/nginx/modsec/modsecurity.conf
+
+    # Create audit log
+    touch /var/log/nginx/modsec_audit.log
+    chown www-data:www-data /var/log/nginx/modsec_audit.log
+    chmod 640 /var/log/nginx/modsec_audit.log
+
+    # Install OWASP CRS
+    cd /etc/nginx/modsec
+    git clone https://github.com/coreruleset/coreruleset.git crs
+
+    cp /etc/nginx/modsec/crs/crs-setup.conf.example \
+       /etc/nginx/modsec/crs/crs-setup.conf
+
+    # Create or copy main.conf
+    if [ -f config_files/main.conf ]; then
+        cp config_files/main.conf /etc/nginx/modsec/main.conf
+    else
+        cat <<EOF > /etc/nginx/modsec/main.conf
+Include /etc/nginx/modsec/modsecurity.conf
+Include /etc/nginx/modsec/crs/crs-setup.conf
+Include /etc/nginx/modsec/crs/rules/*.conf
+EOF
+    fi
+
+    # Enable ModSecurity globally in nginx.conf (only if not already present)
+    if ! grep -q "modsecurity on;" /etc/nginx/nginx.conf; then
+        sed -i '/http {/a \
+    modsecurity on;\n\
+    modsecurity_rules_file /etc/nginx/modsec/main.conf;\n' \
+        /etc/nginx/nginx.conf
+    fi
+
+    # Deploy nginx site config (your reverse proxy config)
+    cp config_files/default /etc/nginx/sites-available/default
+
+    # Ensure site is enabled
+    ln -sf /etc/nginx/sites-available/default \
+           /etc/nginx/sites-enabled/default
+
+    # Test and restart nginx
+    nginx -t && systemctl restart nginx
+
+    echo "[+] ModSecurity + OWASP CRS successfully installed."
 fi
 
 ########################################
