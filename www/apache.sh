@@ -95,5 +95,6 @@ tar -cvf final_app.tar $WEBROOT /etc/apache2
 
 #try restarting machines
 systemctl restart apache2
+systemctl restart ufw
 echo "test if modsecurity works, curl http://127.0.0.1?q=<script>alert(1);</script> results in 403"
 echo "try restart your machine now"
