@@ -166,3 +166,5 @@ echo "Deployment Complete."
 echo "Initial backup: /root/nginx_backups/initial.tar"
 echo "Final backup: /root/nginx_backups/current_webapp.tar"
 echo "====================================="
+
+echo "test curl http://127.0.0.1?q=<script>alert(1);</script>"
