@@ -1,0 +1,2 @@
+1. backup_to_web means we ssh into the webserver and then scp stuff to my host
+2. backup_from_web means we ssh from the webserver to the backup server
