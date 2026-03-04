@@ -12,8 +12,8 @@ sudo apt upgrade -y
 sudo apt full-upgrade -y
 sudo apt install ufw -y #add ufw
 sudo apt install git -y #add git
-sudo apt install tmux #add tmux
-sudo apt install ssh #add ssh
+sudo apt install tmux -y #add tmux
+sudo apt install ssh -y #add ssh
 
 #make sure we have no ssh key
 rm /root/.ssh/authorized_keys
